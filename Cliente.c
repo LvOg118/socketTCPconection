@@ -18,37 +18,75 @@ void bufferZeros(char* buf, int size){ // Coloca zeros no buffer
 }
 
 int main(int argc, char *argv[ ]){
+    if (argc != 5){
+    	printf("[!] Número de argumentos incompatível \n");
+    	exit (1);
+    }
     char* hostServidor = argv[1]; // Recebe o IP do servidor
     int portaServidor = atoi(argv[2]); // Recebe a porta de entrada no servidor
     char* nomeArquivo = argv[3]; // Recebe o nome do arquivo
     int tamBuffer = atoi(argv[4]); // Recebe o tamanho do buffer
-
-    int clientSocket, BufferSocket, TotalBytes = 0 ; // Variáveis de controle da conexão
+    FILE *file;
+    int clientSocket, BufferSocket; // Variáveis de controle da conexão
+    unsigned int TotalBytes = 0;
+    double taxa;
     char* buffer = (char*) malloc(tamBuffer * sizeof(char)); // Cria um buffer de tamanho tamBuffer
+    printf("[+] Buffer de tamanho %i Criado \n", tamBuffer);
 
-	struct timeval time;
+	struct timeval timeInit, timeEnd, timeDelta;
 	struct sockaddr_in servidorAddr; // Estrutura existente em netinet/in.h que contém um endereço de internet
 
 	servidorAddr.sin_family = AF_INET; // Família do endrereço
 	servidorAddr.sin_port = htons(portaServidor); // Porta de entrada do servidor na ordem de bytes de rede
 	servidorAddr.sin_addr.s_addr = inet_addr(hostServidor); // Converte o endereço de IP,  para um endereço válido
 
-	gettimeofday(&time, NULL); // Recebe o valor do tempo atual
+	gettimeofday(&timeInit, NULL); // Recebe o valor do tempo atual
 
 	clientSocket = socket(PF_INET, SOCK_STREAM, 0);	// Cria um novo socket
-	connect(clientSocket, (struct sockaddr*)&servidorAddr, sizeof(servidorAddr)); // Estabelece uma conẽxão com o server
+	if (clientSocket < 0){
+		printf("[!] Socket não pôde ser criado \n");
+    	exit (1);
+	}
+	printf("[+] Socket criado \n");
+	if (connect(clientSocket, (struct sockaddr*)&servidorAddr, sizeof(servidorAddr)) < 0){ // Estabelece uma conexão com o server
+		printf("[!] Conexão não pôde ser estabilizada \n");
+    	exit (1);	
+	}
+	printf("[+] Conectado ao servidor \n");
 	
 	bufferZeros(buffer, tamBuffer); // reseta o buffer
-	for (int i=0; i < tamBuffer; i++){ // Coloca o nome do arquivo no buffer
-		*buffer[i] = *nomeArquivo;
+	for (int i=0; i < strlen(nomeArquivo); i++){ // Coloca o nome do arquivo no buffer
+		buffer[i] = nomeArquivo[i];
 	}
 	BufferSocket = write(clientSocket, buffer, tamBuffer); // Escreve a mensagem no socket
+	if (BufferSocket < 0){
+		printf("[!] Escrita no socket não pôde ser realizada \n");
+    	exit (1);
+	}
+    printf("[+] Requisição de arquivo enviada \n");
     bufferZeros(buffer, tamBuffer); // Reseta o buffer
-    File = fopen("saida.txt", "w"); // Abre o arquivo de escrita;
-    while( recv(clientSocket, buffer, tamBuffer, 0) > 0 ){
-        fwrite(buffer , 1 , tamBuffer , File )
-        TotalBytes += tamBuffer;
+    file = fopen("saida.txt", "w"); // Abre o arquivo de escrita;
+    printf("[+] Recebendo dados \n");
+    BufferSocket = recv(clientSocket, buffer, tamBuffer, 0);
+    if (BufferSocket < 0){
+    	printf("[!] Erro na leitura do socket\n");
+    	exit (1);
     }
-
-    
+    while( BufferSocket > 0 ){
+        fwrite(buffer , 1 , tamBuffer , file);
+        TotalBytes += tamBuffer;
+        BufferSocket = recv(clientSocket, buffer, tamBuffer, 0);
+    }
+    printf("[+] Dados recebidos \n");
+    fclose(file);
+    close(clientSocket);
+    gettimeofday(&timeEnd, NULL); // Recebe o valor do tempo final
+    timersub(&timeEnd, &timeInit, &timeDelta); // Calcula a variação de tempo
+    taxa = (double)((int)(timeDelta.tv_sec) + ((double)(timeDelta.tv_usec))/1000000);
+    taxa = (TotalBytes/1000)/taxa;
+    printf("-------------------------------------------- \n");
+    printf("--> Tempo percorrido: %3u.%06u segundos\n", (int)(timeDelta.tv_sec), (int)(timeDelta.tv_usec));
+    printf("--> Buffer = %5u byte(s), %10.2f kbps (%u bytes em %3u.%06u s) \n", tamBuffer, taxa, TotalBytes, (unsigned int)timeDelta.tv_sec, (unsigned int)timeDelta.tv_usec);
+    printf("-------------------------------------------- \n");
+    free(buffer);
 }
