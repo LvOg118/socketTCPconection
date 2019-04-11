@@ -21,8 +21,8 @@ int main(int argc, char *argv[ ]){
     int portaServidor = atoi(argv[1]); // Recebe a porta de entrada do servidor
     int tamBuffer = atoi(argv[2]); // Recebe o tamanho do buffer
     FILE* file;
-    int socketFD, newSocket, BufferSocket, cAddrSize, count = 0, deltaTime = 0; // Variáveis de controle da conexão
-    unsigned int TotalBytes = 0;
+    int socketFD, newSocket, BufferSocket, cAddrSize, deltaTime = 0; // Variáveis de controle da conexão
+    unsigned int TotalBytes = 0, flag;
     char* nomeArquivo = (char*) malloc(tamBuffer * sizeof(char));
     char* buffer = (char*) malloc(tamBuffer * sizeof(char)); // Cria um buffer de tamanho tamBuffer
     printf("[+] Buffer de tamanho %d Criado \n", tamBuffer);
@@ -64,23 +64,24 @@ int main(int argc, char *argv[ ]){
 		printf("[!] Erro ao ler socket \n");
     	exit (1);
 	}
-    for (int i=0; i < tamBuffer; i++){ // Recupera o nome do arquivo do buffer
+    for (int i=0; i < BufferSocket; i++){ // Recupera o nome do arquivo do buffer
 		if (buffer[i] != '0'){
 			nomeArquivo[i] = buffer[i];
-			count++;
 		}
 	}
-	nomeArquivo = (char*) realloc(nomeArquivo, count * sizeof(char));
+	nomeArquivo = (char*) realloc(nomeArquivo, BufferSocket * sizeof(char));
     file = fopen(nomeArquivo, "r"); // Abre o arquivo
     bufferZeros(buffer, tamBuffer);
-    while (fread (buffer, 1, tamBuffer, file) != 0){
-    	BufferSocket = write(newSocket, buffer, tamBuffer); // Escreve a mensagem no socket
+    flag = fread (buffer, 1, tamBuffer, file);
+    while (flag > 0){
+    	BufferSocket = write(newSocket, buffer, flag); // Escreve a mensagem no socket
     	if (BufferSocket < 0){
 			printf("[!] Erro ao escrever no socket \n");
     		exit (1);
 		}
     	bufferZeros(buffer, tamBuffer);
-    	TotalBytes += tamBuffer;
+    	TotalBytes += flag;
+        flag = fread (buffer, 1, tamBuffer, file);
     }
     printf("[+] Arquivo enviado \n");
     fclose(file);

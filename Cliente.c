@@ -58,7 +58,7 @@ int main(int argc, char *argv[ ]){
 	for (int i=0; i < strlen(nomeArquivo); i++){ // Coloca o nome do arquivo no buffer
 		buffer[i] = nomeArquivo[i];
 	}
-	BufferSocket = write(clientSocket, buffer, tamBuffer); // Escreve a mensagem no socket
+	BufferSocket = write(clientSocket, buffer, strlen(nomeArquivo)); // Escreve a mensagem no socket
 	if (BufferSocket < 0){
 		printf("[!] Escrita no socket não pôde ser realizada \n");
     	exit (1);
@@ -67,15 +67,15 @@ int main(int argc, char *argv[ ]){
     bufferZeros(buffer, tamBuffer); // Reseta o buffer
     file = fopen("saida.txt", "w"); // Abre o arquivo de escrita;
     printf("[+] Recebendo dados \n");
-    BufferSocket = recv(clientSocket, buffer, tamBuffer, 0);
+    BufferSocket = read(clientSocket, buffer, tamBuffer);
     if (BufferSocket < 0){
     	printf("[!] Erro na leitura do socket\n");
     	exit (1);
     }
     while( BufferSocket > 0 ){
-        fwrite(buffer , 1 , tamBuffer , file);
-        TotalBytes += tamBuffer;
-        BufferSocket = recv(clientSocket, buffer, tamBuffer, 0);
+        fwrite(buffer , 1 , BufferSocket , file);
+        TotalBytes += BufferSocket;
+        BufferSocket = read(clientSocket, buffer, tamBuffer);
     }
     printf("[+] Dados recebidos \n");
     fclose(file);
