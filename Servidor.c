@@ -7,12 +7,6 @@
 #include <sys/time.h>
 #include <netdb.h>
 
-void bufferZeros(char* buf, int size){ // Coloca zeros no buffer
-	for (int i=0; i < size; i++){
-		buf[i] = '0';
-	}
-}
-
 int main(int argc, char *argv[ ]){
 	if (argc < 3){
 		printf("[!] Número de argumentos incompátiveis \n");
@@ -22,7 +16,7 @@ int main(int argc, char *argv[ ]){
     int tamBuffer = atoi(argv[2]); // Recebe o tamanho do buffer
     FILE* file;
     int socketFD, newSocket, numDadosSocket, cAddrSize, deltaTime = 0; // Variáveis de controle da conexão
-    unsigned int TotalBytes = 0, flag;
+    unsigned int TotalBytes = 0, numDadosArquivo;
     char* nomeArquivo = (char*) malloc(tamBuffer * sizeof(char));
     char* buffer = (char*) malloc(tamBuffer * sizeof(char)); // Cria um buffer de tamanho tamBuffer
     printf("[+] Buffer de tamanho %d Criado \n", tamBuffer);
@@ -36,13 +30,13 @@ int main(int argc, char *argv[ ]){
 
 	gettimeofday(&timeInit, NULL); // Recebe o valor do tempo atual
 
-	socketFD = socket(PF_INET, SOCK_STREAM, 0);	// Cria um novo 
+	socketFD = socket(PF_INET, SOCK_STREAM, 0);	// Cria um socket para o servidor
 	if (socketFD < 0){
 		printf("[!] Socket não pôde ser criado \n");
     	exit (1);
 	}
 	printf("[+] Socket criado \n");
-	if (bind(socketFD, (struct sockaddr*) &servidorAddr, sizeof(servidorAddr)) < 0){ // "Linka" um socket a um endereço
+	if (bind(socketFD, (struct sockaddr*) &servidorAddr, sizeof(servidorAddr)) < 0){ // "Linka" o socket a um endereço
 		printf("[!] Bind não pôde ser realizado \n");
     	exit (1);
 	}
@@ -58,27 +52,31 @@ int main(int argc, char *argv[ ]){
     	exit (1);
 	}
     printf("[+] Conexão iniciada \n");
-    numDadosSocket = read(newSocket, buffer, tamBuffer);
+    numDadosSocket = read(newSocket, buffer, tamBuffer); // lê e armazena a quantidade de dados do socket
     if (numDadosSocket < 0){
 		printf("[!] Erro ao ler socket \n");
     	exit (1);
 	}
     for (int i=0; i < numDadosSocket; i++){ // Recupera o nome do arquivo do buffer
-		if (buffer[i] != '0'){
-			nomeArquivo[i] = buffer[i];
-		}
+		nomeArquivo[i] = buffer[i];
 	}
-	nomeArquivo = (char*) realloc(nomeArquivo, numDadosSocket * sizeof(char));
+	nomeArquivo = (char*) realloc(nomeArquivo, numDadosSocket * sizeof(char)); // realoca o tamanho do vetor com o nome do arquivo
     file = fopen(nomeArquivo, "r"); // Abre o arquivo
-    flag = fread (buffer, 1, tamBuffer, file);
-    while (flag > 0){
-    	numDadosSocket = write(newSocket, buffer, flag); // Escreve a mensagem no socket
+    if (file == NULL){
+    	printf("[!] Arquivo não encontrado \n");
+    	close(socketFD);
+    	close(newSocket);
+    	exit (1);
+    }
+    numDadosArquivo = fread (buffer, 1, tamBuffer, file); // lê e armazena o numero de caracteres lidos no arquivo
+    while (numDadosArquivo > 0){
+    	numDadosSocket = write(newSocket, buffer, numDadosArquivo); // escreve e armazena o numero de dados escritos no socket
     	if (numDadosSocket < 0){
 			printf("[!] Erro ao escrever no socket \n");
     		exit (1);
 		}
-    	TotalBytes += flag;
-        flag = fread (buffer, 1, tamBuffer, file);
+    	TotalBytes += numDadosArquivo;
+        numDadosArquivo = fread (buffer, 1, tamBuffer, file);
     }
     printf("[+] Arquivo enviado \n");
     fclose(file);

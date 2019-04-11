@@ -54,13 +54,13 @@ int main(int argc, char *argv[ ]){
     printf("[+] Requisição de arquivo enviada \n");
     file = fopen("saida.txt", "w"); // Abre o arquivo de escrita;
     printf("[+] Recebendo dados \n");
-    numDadosSocket = read(clientSocket, buffer, tamBuffer);
+    numDadosSocket = read(clientSocket, buffer, tamBuffer); // lê e armazena o número de dados lidos no socket
     if (numDadosSocket < 0){
     	printf("[!] Erro na leitura do socket\n");
     	exit (1);
     }
     while( numDadosSocket > 0 ){
-        fwrite(buffer , 1 , numDadosSocket , file);
+        fwrite(buffer , 1 , numDadosSocket , file); // passa do buffer para o arquivo de saída
         TotalBytes += numDadosSocket;
         numDadosSocket = read(clientSocket, buffer, tamBuffer);
     }
@@ -69,8 +69,8 @@ int main(int argc, char *argv[ ]){
     close(clientSocket);
     gettimeofday(&timeEnd, NULL); // Recebe o valor do tempo final
     timersub(&timeEnd, &timeInit, &timeDelta); // Calcula a variação de tempo
-    taxa = (double)((int)(timeDelta.tv_sec) + ((double)(timeDelta.tv_usec))/1000000);
-    taxa = (TotalBytes/1000)/taxa;
+    taxa = (double)((int)(timeDelta.tv_sec) + ((double)(timeDelta.tv_usec))/1000000); // calculo do tempo gasto
+    taxa = (TotalBytes/1000)/taxa; // calculo da taxa em kbps
     printf("-------------------------------------------- \n");
     printf("--> Tempo percorrido: %3u.%06u segundos\n", (int)(timeDelta.tv_sec), (int)(timeDelta.tv_usec));
     printf("--> Buffer = %5u byte(s), %10.2f kbps (%u bytes em %3u.%06u s) \n", tamBuffer, taxa, TotalBytes, (unsigned int)timeDelta.tv_sec, (unsigned int)timeDelta.tv_usec);
