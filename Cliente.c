@@ -7,16 +7,6 @@
 #include <sys/time.h>
 #include <netdb.h>
 
-///https://books.google.com.br/books?id=qoX3qVanhgEC&pg=PT56&lpg=PT56&dq=abertura+ativa+socket+c+socket&source=bl&ots=K_ldhMkl0r&sig=ACfU3U3DeMl3Q_ipYAT0iJcJEu2tx2K2aQ&hl=pt-BR&sa=X&ved=2ahUKEwiE1J6D9Z7hAhWWGbkGHU2dBdEQ6AEwDHoECAkQAQ#v=onepage&q=abertura%20ativa%20socket%20c%20socket&f=false
-///https://www.youtube.com/watch?v=hptViBE23fI
-///http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
-
-void bufferZeros(char* buf, int size){ // Coloca zeros no buffer
-	for (int i=0; i < size; i++){
-		buf[i] = '0';
-	}
-}
-
 int main(int argc, char *argv[ ]){
     if (argc != 5){
     	printf("[!] Número de argumentos incompatível \n");
@@ -27,13 +17,13 @@ int main(int argc, char *argv[ ]){
     char* nomeArquivo = argv[3]; // Recebe o nome do arquivo
     int tamBuffer = atoi(argv[4]); // Recebe o tamanho do buffer
     FILE *file;
-    int clientSocket, BufferSocket; // Variáveis de controle da conexão
+    int clientSocket, numDadosSocket; // Variáveis de controle da conexão
     unsigned int TotalBytes = 0;
     double taxa;
     char* buffer = (char*) malloc(tamBuffer * sizeof(char)); // Cria um buffer de tamanho tamBuffer
     printf("[+] Buffer de tamanho %i Criado \n", tamBuffer);
 
-	struct timeval timeInit, timeEnd, timeDelta;
+	struct timeval timeInit, timeEnd, timeDelta; // Estruturas de tempo
 	struct sockaddr_in servidorAddr; // Estrutura existente em netinet/in.h que contém um endereço de internet
 
 	servidorAddr.sin_family = AF_INET; // Família do endrereço
@@ -53,29 +43,26 @@ int main(int argc, char *argv[ ]){
     	exit (1);	
 	}
 	printf("[+] Conectado ao servidor \n");
-	
-	bufferZeros(buffer, tamBuffer); // reseta o buffer
 	for (int i=0; i < strlen(nomeArquivo); i++){ // Coloca o nome do arquivo no buffer
 		buffer[i] = nomeArquivo[i];
 	}
-	BufferSocket = write(clientSocket, buffer, strlen(nomeArquivo)); // Escreve a mensagem no socket
-	if (BufferSocket < 0){
+	numDadosSocket = write(clientSocket, buffer, strlen(nomeArquivo)); // Escreve a mensagem no socket
+	if (numDadosSocket < 0){
 		printf("[!] Escrita no socket não pôde ser realizada \n");
     	exit (1);
 	}
     printf("[+] Requisição de arquivo enviada \n");
-    bufferZeros(buffer, tamBuffer); // Reseta o buffer
     file = fopen("saida.txt", "w"); // Abre o arquivo de escrita;
     printf("[+] Recebendo dados \n");
-    BufferSocket = read(clientSocket, buffer, tamBuffer);
-    if (BufferSocket < 0){
+    numDadosSocket = read(clientSocket, buffer, tamBuffer);
+    if (numDadosSocket < 0){
     	printf("[!] Erro na leitura do socket\n");
     	exit (1);
     }
-    while( BufferSocket > 0 ){
-        fwrite(buffer , 1 , BufferSocket , file);
-        TotalBytes += BufferSocket;
-        BufferSocket = read(clientSocket, buffer, tamBuffer);
+    while( numDadosSocket > 0 ){
+        fwrite(buffer , 1 , numDadosSocket , file);
+        TotalBytes += numDadosSocket;
+        numDadosSocket = read(clientSocket, buffer, tamBuffer);
     }
     printf("[+] Dados recebidos \n");
     fclose(file);
